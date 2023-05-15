@@ -1,5 +1,5 @@
 import pygame, tile, level
-from support import import_player_folder
+from support import import_folder
 
 class Player(pygame.sprite.Sprite):
     def __init__(self,pos, surface):
@@ -40,10 +40,10 @@ class Player(pygame.sprite.Sprite):
         self.animations = {'idle':[], 'jump':[]}
         for animation in self.animations.keys():
             full_path = character_path + animation
-            self.animations[animation] = import_player_folder(full_path)
+            self.animations[animation] = import_folder(full_path, 3)
 
     def import_power_animation(self):
-        self.power = import_player_folder('./graphics/power')
+        self.power = import_folder('./graphics/power', 3)
 
     def animate(self):
         animation = self.animations[self.status]
