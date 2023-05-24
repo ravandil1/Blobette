@@ -1,30 +1,72 @@
 import pygame
-import sys
 from settings import *
 from level import Level
 from player import Player
 from UI import UI
-from tutorial import tutorial, tutorial2, tutorial3, tutorial4
+from menu import Main, Tutorial, Complete, Again, Over
 
 
-# Pygame setup
-pygame.init()
+
+
+
 
 class Game:
-    def __init__(self, current_health):
-        self.level = Level(current_level, screen, self.level_complete, self.try_again)
-        self.current_health = current_health
-        self.status = 'tutorial'
+    def __init__(self, surface):
+        self.surface = surface
+        #starting level
+        self.current_level = 0
+        #starting life
+        self.current_health = 3
+        #game states
+        self.level = Level(self.current_level, self.surface, self.level_complete, self.try_again)
+        self.main = Main(self.surface, self.tutorial, self.new_game)
+        self.tutorial = Tutorial(self.surface, self.main_menu, self.start_game)
+        self.again = Again(self.surface, self.start_game, self.main_menu, self.fail)
+        self.over = Over(self.surface, self.start_game, self.main_menu, self.new_game)
+        self.complete = Complete(self.surface, self.start_game, self.main_menu, self.change_level)
+        #starting state
+        self.status = 'menu'
     
         #audio
         self.bg_music = pygame.mixer.music.load('./audio/bg_music.wav')
         pygame.mixer.music.set_volume(0.1)
 
         #UI
-        self.ui = UI(screen, self.current_health)
+        self.ui = UI(self.surface, self.current_health)
     
+    def main_menu(self):
+        self.status = 'menu'
+    
+    def tutorial(self):
+        self.status = 'tutorial'
+
     def level_complete(self):
         self.status = 'complete'
+
+    def start_game(self):
+        self.status = 'run'
+    
+    def change_level(self):
+        self.current_level += 1
+        if self.current_level > 14:
+                self.current_level = 0
+                self.current_health = 3
+                self.ui.update_health(self.surface, self.current_health)
+        self.level.clear_groups()
+        self.level.reset_level(self.current_level, self.surface, self.level_complete, self.try_again)
+    
+    def new_game(self):
+        self.current_health = 3
+        self.current_level = 0
+        self.level.clear_groups()
+        self.level.reset_level(self.current_level, self.surface, self.level_complete, self.try_again)
+        self.ui.update_health(self.surface, self.current_health)
+
+    def fail(self):
+        self.current_health += -1
+        self.level.reset_level(self.current_level, self.surface, self.level_complete, self.try_again)
+        self.ui.update_health(self.surface, self.current_health)
+        self.status = 'run'
 
     def try_again(self):
         if self.current_health <= 1:
@@ -33,101 +75,24 @@ class Game:
             self.status = 'try again'
 
     def run(self):
-        self.level.run()
-        self.ui.update()        
-
-screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption("Blobette")
-clock = pygame.time.Clock()
-current_level = 0
-current_health = 3
-game = Game(current_health)
-test_font = pygame.font.Font(None, 50)
-test_font2 = pygame.font.Font(None, 25)
-complete_level = test_font.render('Level complete', False, 'White')
-try_again = test_font.render('Try again', False, 'White')
-game_over = test_font.render('Game Over', False, 'White')
-press = test_font2.render('Press left mouse button to continue', False, 'White')
-how_to_play = test_font.render('How to play', False, 'White')
-tutorial_msg = test_font2.render(tutorial, False, 'White')
-tutorial_msg2 = test_font2.render(tutorial2, False, 'White')
-tutorial_msg3 = test_font2.render(tutorial3, False, 'White')
-tutorial_msg4 = test_font2.render(tutorial4, False, 'White')
-
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-    
-    if game.status == 'run':
-        game.run()
-
-    elif game.status == 'tutorial':
-        mouse_keys = pygame.mouse.get_pressed()
-        key_pressed = False
-        pygame.mixer.music.play(loops = - 1)
-        if mouse_keys[0] and key_pressed == False:
-            key_pressed = True
-            game.status = 'run'    
-        screen.fill('black')
-        screen.blit(how_to_play, (screen_width //2 - 150, 100))
-        screen.blit(tutorial_msg, (150, 200))
-        screen.blit(tutorial_msg2, (150, 220))
-        screen.blit(tutorial_msg3, (150, 240))
-        screen.blit(tutorial_msg4, (150, 260))
-        screen.blit(press, (screen_width //2 - 150, screen_height // 2))     
-        
-    elif game.status == 'complete':
-        mouse_keys = pygame.mouse.get_pressed()
-        key_pressed = False
-        if mouse_keys[0] and key_pressed == False:
-            key_pressed = True
-            current_level += 1
-            if current_level > 14:
-                current_level = 0
-                game.current_health = 3
-                game.ui.update_health(screen, game.current_health)
-            game.level.clear_groups()
-            game.level.reset_level(current_level, screen, game.level_complete, game.try_again)
-            game.status = 'run'
-        screen.fill('black')
-        screen.blit(complete_level, (screen_width //2 - 150, screen_height // 2 - 50))
-        screen.blit(press, (screen_width //2 - 150, screen_height // 2))
-    
-    elif game.status == 'try again' and game.current_health > 0:
-        mouse_keys = pygame.mouse.get_pressed()
-        key_pressed = False
-        if mouse_keys[0] and key_pressed == False:
-            key_pressed = True
-            game.current_health += -1
-            game.level.reset_level(current_level, screen, game.level_complete, game.try_again)
-            game.ui.update_health(screen, game.current_health)
-            game.status = 'run'
-        screen.fill('black')
-        screen.blit(try_again, (screen_width //2 - 150, screen_height // 2 - 50))
-        screen.blit(press, (screen_width //2 - 150, screen_height // 2))
-    
-    elif game.status == 'game over':
-        mouse_keys = pygame.mouse.get_pressed()
-        key_pressed = False
-        game.current_health = 3
-        pygame.mixer.music.stop()
-        if mouse_keys[0] and key_pressed == False:
-            key_pressed = True
-            current_level = 0
-            game.level.clear_groups()
-            game.level.reset_level(current_level, screen, game.level_complete, game.try_again)
-            game.ui.update_health(screen, game.current_health)
-            game.status = 'run'
-            pygame.mixer.music.play(loops = -1)
-        screen.fill('black')
-        screen.blit(game_over, (screen_width //2 - 150, screen_height // 2 - 50))
-        screen.blit(press, (screen_width //2 - 150, screen_height // 2))   
-    pygame.display.update()
-    clock.tick(60)
-
-    
-    
-
-
+        if self.status == 'run':
+            self.level.run()
+            self.ui.update()
+        elif self.status == 'menu':
+            self.surface.fill('black')
+            self.main.update()
+            pygame.mixer.music.stop()
+        elif self.status == 'tutorial':   
+            self.surface.fill('black')
+            self.tutorial.update()
+            pygame.mixer.music.play(loops = - 1)
+        elif self.status == 'complete':
+            self.surface.fill('black')
+            self.complete.update()
+        elif self.status == 'try again' and self.current_health > 0:
+            self.surface.fill('black')
+            self.again.update()
+        elif self.status == 'game over':
+            pygame.mixer.music.stop()
+            self.surface.fill('black')
+            self.over.update()
